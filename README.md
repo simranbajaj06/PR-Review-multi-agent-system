@@ -138,10 +138,3 @@ land as a single additive change against the existing ports.
       view, an audit trail, and cost tracking
 - [ ] Reliability layer: retries with backoff, circuit breakers, and
       fault-tolerant handling around the Groq and GitHub calls
-
-## Credits
-
-Architecture derived from [*Designing an AI Pull-Request Review Agent*](https://www.antern.co/blogs/production-grade-ai-pr-review-agent/)
-by Ayush Singh / Antern. This implementation follows its own path and stack
-choices (Groq instead of the original's model provider, no Tiger Cloud yet)
-rather than reproducing it exactly.
