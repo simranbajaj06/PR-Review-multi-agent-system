@@ -1,105 +1,147 @@
-# PR Reviewer Agent — Step 1: PR notification
+# PR Reviewer — Multi-Agent System
 
-This is just the first slice of the project: get notified the instant a PR is
-opened or updated on **one repo**, verified and queued for review. The LLM
-review step comes later.
+An AI-powered GitHub PR review agent, built incrementally toward the architecture
+described in [*Designing an AI Pull-Request Review Agent*](https://www.antern.co/blogs/production-grade-ai-pr-review-agent/).
+That write-up derives a full production design — parallel specialist reviewers,
+retrieval-grounded context, a confidence-weighted human-in-the-loop gate, and a
+single event spine for audit/cost/tracing. This repo builds toward that design
+one working phase at a time rather than all at once.
 
-## 1. Install
+**Current status: single-agent MVP.** One LLM call reviews the whole diff and
+posts a comment. The multi-agent split, retrieval, and the rest of the roadmap
+below are not built yet — see [Roadmap](#roadmap).
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -e .
+## What it does today
+
+1. Listens for GitHub `pull_request` webhooks (`opened`, `synchronize`,
+   `reopened`, `ready_for_review`)
+2. Verifies the HMAC-SHA256 signature and drops duplicate deliveries
+   (`X-GitHub-Delivery`)
+3. Enqueues the event and returns `200` immediately
+4. A background worker fetches the PR diff from the GitHub API
+5. The diff is reviewed by a Groq-hosted open model, run through a one-node
+   LangGraph graph
+6. The review is posted back to the PR as a comment
+
+```mermaid
+flowchart LR
+    GH[GitHub PR event] -->|webhook| Router[FastAPI webhook router]
+    Router --> Handler[WebhookHandler<br/>verify + dedupe]
+    Handler --> Queue[In-memory ReviewQueue]
+    Queue --> Worker[review_worker]
+    Worker -->|fetch_diff| GHClient[GitHubClient]
+    Worker -->|review| Reviewer[GroqReviewer<br/>LangGraph + ChatGroq]
+    Worker -->|post_comment| GHClient
+    GHClient --> GH
 ```
 
-## 2. Configure your secret
+## Architecture
 
-```bash
-cp .env.example .env
+The code follows a ports-and-adapters (hexagonal) layout, which is what makes
+the roadmap below additive rather than a rewrite:
+
+- **`domain/`** — framework-agnostic core. `interfaces.py` defines the ports
+  (`WebhookVerifier`, `ReviewQueue`, `VCSClient`, `Reviewer`); `models.py`
+  defines the data shapes (`PullRequestEvent`, `Review`); `services/` holds
+  logic that depends only on those ports.
+- **`adapters/`** — concrete implementations of each port (GitHub, the queue,
+  the LLM). Swappable without touching `domain/`.
+- **`api/`** — the FastAPI HTTP layer; delegates everything to `WebhookHandler`.
+- **`workers/`** — drains the queue and drives a review end-to-end.
+- **`main.py`** — the composition root; the only file that imports both ports
+  and concrete adapters and wires them together.
+
+## Project structure
+
+```
+pr_reviewer/
+├── main.py                          # composition root
+├── config.py                        # settings (GITHUB_WEBHOOK_SECRET, etc.)
+├── api/
+│   └── webhook_router.py            # POST /webhook/github
+├── domain/
+│   ├── models.py                    # PullRequestEvent, Review
+│   ├── interfaces.py                # WebhookVerifier, ReviewQueue, VCSClient, Reviewer
+│   └── services/
+│       └── webhook_handler.py       # verify -> dedupe -> parse -> filter -> enqueue
+├── adapters/
+│   ├── github/
+│   │   ├── signature_verifier.py    # HMAC-SHA256 verification
+│   │   ├── payload_parser.py        # raw JSON -> PullRequestEvent
+│   │   └── github_client.py         # fetch_diff, post_comment
+│   ├── queue/
+│   │   └── in_memory_queue.py       # process-local ReviewQueue
+│   └── llm/
+│       └── groq_reviewer.py         # Reviewer via LangGraph + ChatGroq
+└── workers/
+    └── review_worker.py             # fetch -> review -> post, in a loop
 ```
 
-Edit `.env` and set `GITHUB_WEBHOOK_SECRET` to a long random string, e.g.:
+## Setup
 
 ```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
+git clone <this repo>
+cd <this repo>
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Load it into your shell before running the app:
+Create a `.env` file in the project root:
 
 ```bash
-export $(cat .env | xargs)
+GITHUB_TOKEN=ghp_...              # classic PAT, repo or public_repo scope
+GITHUB_WEBHOOK_SECRET=...          # must match the secret set on the GitHub webhook
+GROQ_API_KEY=gsk_...               # console.groq.com/keys
 ```
 
-## 3. Run the server
+Run the app:
 
 ```bash
-uvicorn pr_reviewer.main:app --reload --port 8000
+uvicorn pr_reviewer.main:app --reload
 ```
 
-Check it's up: `curl http://127.0.0.1:8000/health` → `{"status": "ok"}`
-
-## 4. Expose it to the internet (local dev only)
-
-GitHub can't reach `localhost`, so tunnel it. Either works:
+Expose it for GitHub to reach (local dev):
 
 ```bash
-# Option A: smee.io (no account needed for a quick test)
-npx smee-client --url https://smee.io/<your-channel> --target http://127.0.0.1:8000/webhook/github
-
-# Option B: ngrok
 ngrok http 8000
 ```
 
-Note the public URL it gives you (e.g. `https://abcd1234.ngrok-free.app/webhook/github`).
+Then, on the repo: **Settings → Webhooks → Add webhook**
+- Payload URL: `https://<your-ngrok-domain>/webhook/github`
+- Content type: `application/json`
+- Secret: same value as `GITHUB_WEBHOOK_SECRET`
+- Events: just the **Pull requests** event
 
-## 5. Register the webhook on your repo
+Open or update a PR on that repo and watch the worker log a fetch, a review,
+and a posted comment.
 
-In your repo → **Settings → Webhooks → Add webhook**:
+## Roadmap
 
-- **Payload URL**: the public URL from step 4
-- **Content type**: `application/json`
-- **Secret**: the exact same value as `GITHUB_WEBHOOK_SECRET`
-- **Which events**: choose "Let me select individual events" → check only **Pull requests**
+Tracking the phases from the design doc this project follows. Unchecked items
+are the next honest steps, not aspirational scope creep — each one is meant to
+land as a single additive change against the existing ports.
 
-Save it. GitHub sends a `ping` event immediately — you should see a `200`
-next to the webhook in GitHub's UI under "Recent Deliveries".
+- [x] Webhook ingress: HMAC verification, idempotency, fast ack
+- [x] End-to-end loop: fetch diff → single LLM review → post comment
+- [x] Orchestration seed: LangGraph graph (currently one node)
+- [ ] Queue: swap `InMemoryReviewQueue` for Redis-backed, decouple worker into
+      its own process
+- [ ] Structured `Finding` contract (severity, category, file/line, confidence,
+      rationale) instead of one free-text summary
+- [ ] Multi-agent split: security / quality / tests / docs specialists running
+      in parallel, merged by an aggregator
+- [ ] Retrieval (RAG): ground each specialist in relevant repo context instead
+      of the bare diff
+- [ ] Confidence-weighted human-in-the-loop gate: auto-post when confident,
+      route to a review queue otherwise
+- [ ] Observability: an event log for every LLM/tool call, feeding a trace
+      view, an audit trail, and cost tracking
+- [ ] Reliability layer: retries with backoff, circuit breakers, and
+      fault-tolerant handling around the Groq and GitHub calls
 
-## 6. Test it
+## Credits
 
-Open a real PR on the repo, or simulate one locally without touching GitHub:
-
-```bash
-chmod +x scripts/test_webhook.sh
-GITHUB_WEBHOOK_SECRET=<same secret> ./scripts/test_webhook.sh
-```
-
-You should see `{"status": "accepted", "pr_number": 42}` and, in the server
-logs, a line like:
-
-```
-[queue] enqueued PR #42 (octocat/example-repo): 'Add retry logic to payment client'
-```
-
-## What happens next
-
-`app.state.review_queue` now holds reviewable PR events. The next step is a
-worker that pulls events off this queue, fetches the diff via the GitHub API,
-and sends it to an LLM for review — that's a new adapter
-(`adapters/llm/...`) and a new domain service, without touching anything
-built here.
-
-## Project layout
-
-```
-src/pr_reviewer/
-├── main.py                        # composition root — wires everything together
-├── config.py                      # env var loading
-├── api/webhook_router.py          # HTTP layer only
-├── domain/
-│   ├── models.py                  # PullRequestEvent
-│   ├── interfaces.py              # WebhookVerifier, ReviewQueue (the ports)
-│   └── services/webhook_handler.py  # verify -> parse -> filter -> enqueue
-└── adapters/
-    ├── github/                    # concrete GitHub implementations
-    └── queue/                     # concrete queue implementation (in-memory for now)
-```
+Architecture derived from [*Designing an AI Pull-Request Review Agent*](https://www.antern.co/blogs/production-grade-ai-pr-review-agent/)
+by Ayush Singh / Antern. This implementation follows its own path and stack
+choices (Groq instead of the original's model provider, no Tiger Cloud yet)
+rather than reproducing it exactly.
