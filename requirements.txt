@@ -1,0 +1,15 @@
+# Web framework
+fastapi>=0.115
+uvicorn[standard]>=0.32
+
+# Config / secrets
+python-dotenv>=1.0
+pydantic-settings>=2.5   # remove if config.py doesn't use this - keep if get_settings() is a BaseSettings
+
+# GitHub API
+requests>=2.32
+
+# LLM orchestration (Groq via LangChain + LangGraph)
+langgraph>=0.2
+langchain-core>=0.3
+langchain-groq>=0.2

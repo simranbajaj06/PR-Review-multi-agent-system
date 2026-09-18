@@ -1,0 +1,13 @@
+{
+  "action": "opened",
+  "number": 42,
+  "pull_request": {
+    "number": 42,
+    "title": "Add retry logic to payment client",
+    "user": { "login": "octocat" },
+    "head": { "sha": "abc123def456", "ref": "feature/retry-logic" },
+    "base": { "ref": "main" },
+    "diff_url": "https://github.com/octocat/example-repo/pull/42.diff"
+  },
+  "repository": { "full_name": "octocat/example-repo" }
+}
