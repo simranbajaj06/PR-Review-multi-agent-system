@@ -16,7 +16,12 @@ import threading
 from pr_reviewer.adapters.github.github_client import GitHubClient
 from pr_reviewer.adapters.llm.grok_reviewer import GroqReviewer
 from pr_reviewer.workers.review_worker import run_worker
+import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="PR Reviewer Agent")
