@@ -9,9 +9,9 @@ import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 
-from pr_reviewer.domain.interfaces import Reviewer
-from pr_reviewer.domain.models import PullRequestEvent, Review
-from pr_reviewer.orchestrator.graph import build_graph
+from src.pr_reviewer.domain.interfaces import Reviewer
+from src.pr_reviewer.domain.models import PullRequestEvent, Review
+from src.pr_reviewer.orchestrator.graph import build_graph
 
 load_dotenv()
 

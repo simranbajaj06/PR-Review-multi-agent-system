@@ -8,10 +8,10 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from pr_reviewer.agents import docs_agent, quality_agent, security_agent, tests_agent
-from pr_reviewer.domain.contracts import AgentType
-from pr_reviewer.orchestrator.aggregator import aggregate_node
-from pr_reviewer.orchestrator.state import ReviewState
+from src.pr_reviewer.agents import docs_agent, quality_agent, security_agent, tests_agent
+from src.pr_reviewer.domain.contracts import AgentType
+from src.pr_reviewer.orchestrator.aggregator import aggregate_node
+from src.pr_reviewer.orchestrator.state import ReviewState
 
 _AGENT_BUILDERS = {
     AgentType.SECURITY: security_agent.build_node,

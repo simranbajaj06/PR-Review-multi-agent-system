@@ -2,7 +2,7 @@
 import hashlib
 import hmac
 
-from pr_reviewer.domain.interfaces import WebhookVerifier
+from src.pr_reviewer.domain.interfaces import WebhookVerifier
 
 
 class GitHubSignatureVerifier(WebhookVerifier):

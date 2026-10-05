@@ -4,8 +4,8 @@ computes an overall confidence, and applies the confidence/severity gate
 that decides whether a review can auto-post or must be held for human
 approval.
 """
-from pr_reviewer.domain.contracts import Finding, Severity
-from pr_reviewer.orchestrator.state import ReviewState
+from src.pr_reviewer.domain.contracts import Finding, Severity
+from src.pr_reviewer.orchestrator.state import ReviewState
 
 # Below this overall confidence, or on any CRITICAL finding, the review is
 # held for human approval instead of auto-posted. Tune once you have real

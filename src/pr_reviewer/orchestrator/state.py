@@ -4,7 +4,7 @@ you wire that up for crash recovery.
 """
 from typing import Annotated, TypedDict
 
-from pr_reviewer.domain.contracts import Finding
+from src.pr_reviewer.domain.contracts import Finding
 
 
 def _merge_findings(a: list[Finding], b: list[Finding]) -> list[Finding]:

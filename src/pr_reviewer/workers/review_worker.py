@@ -1,7 +1,7 @@
 """Drains the review queue: fetch diff -> get a review -> post it back to the PR."""
 import time
 
-from pr_reviewer.domain.interfaces import ReviewQueue, Reviewer, VCSClient
+from src.pr_reviewer.domain.interfaces import ReviewQueue, Reviewer, VCSClient
 
 
 def run_worker(

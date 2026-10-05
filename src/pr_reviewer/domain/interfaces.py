@@ -4,7 +4,7 @@ Inversion piece of SOLID: the domain never imports a concrete adapter.
 """
 from abc import ABC, abstractmethod
 
-from pr_reviewer.domain.models import PullRequestEvent, Review
+from src.pr_reviewer.domain.models import PullRequestEvent, Review
 
 
 class WebhookVerifier(ABC):

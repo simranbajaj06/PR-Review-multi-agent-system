@@ -3,7 +3,7 @@ to WebhookHandler, which this route doesn't even know the internals of.
 """
 from fastapi import APIRouter, Header, HTTPException, Request
 
-from pr_reviewer.domain.services.webhook_handler import WebhookHandler
+from src.pr_reviewer.domain.services.webhook_handler import WebhookHandler
 
 router = APIRouter()
 

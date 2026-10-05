@@ -3,8 +3,8 @@ Depends only on the abstract ports (WebhookVerifier, ReviewQueue) - never on
 FastAPI or a concrete GitHub adapter class. That's what makes it unit-testable
 with fakes and swappable without changes here.
 """
-from pr_reviewer.adapters.github.payload_parser import parse_pull_request_event
-from pr_reviewer.domain.interfaces import ReviewQueue, WebhookVerifier
+from src.pr_reviewer.adapters.github.payload_parser import parse_pull_request_event
+from src.pr_reviewer.domain.interfaces import ReviewQueue, WebhookVerifier
 
 
 class WebhookHandler:
@@ -25,7 +25,7 @@ class WebhookHandler:
         payload_body: bytes,
         signature_header: str | None,
         payload: dict,
-        delivery_id: str | None = None,       # ← new
+        delivery_id: str | None = None,       
     ) -> dict:
         if not self._verifier.verify(payload_body, signature_header):
             raise WebhookHandler.InvalidSignature("signature verification failed")

@@ -4,8 +4,8 @@ anything in domain/ or api/, since they only ever depend on ReviewQueue.
 """
 import queue
 
-from pr_reviewer.domain.interfaces import ReviewQueue
-from pr_reviewer.domain.models import PullRequestEvent
+from src.pr_reviewer.domain.interfaces import ReviewQueue
+from src.pr_reviewer.domain.models import PullRequestEvent
 
 
 class InMemoryReviewQueue(ReviewQueue):

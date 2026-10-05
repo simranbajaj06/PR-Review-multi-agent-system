@@ -13,8 +13,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 from pydantic import ValidationError
 
-from pr_reviewer.domain.contracts import AgentType, Severity, Finding, SpecialistOutput
-from pr_reviewer.orchestrator.state import ReviewState
+from src.pr_reviewer.domain.contracts import AgentType, Severity, Finding, SpecialistOutput
+from src.pr_reviewer.orchestrator.state import ReviewState
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def make_specialist_node(agent_type: AgentType, system_prompt: str, llm: ChatGro
     structured_llm = llm.with_structured_output(SpecialistOutput, method="json_mode")
 
     def node(state: ReviewState) -> dict:
-        diff = state["diff"][:MAX_DIFF_CHARS]
+        diff = state["diff"]
         messages = [
             SystemMessage(
                 content=f"{system_prompt}\n\n"

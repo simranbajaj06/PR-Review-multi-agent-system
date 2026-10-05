@@ -7,15 +7,15 @@ load_dotenv()  # must run before GitHubClient/GroqReviewer read os.environ below
 
 from fastapi import FastAPI
 
-from pr_reviewer.adapters.github.signature_verifier import GitHubSignatureVerifier
-from pr_reviewer.adapters.queue.in_memory_queue import InMemoryReviewQueue
-from pr_reviewer.api.webhook_router import router as webhook_router
-from pr_reviewer.config import get_settings
-from pr_reviewer.domain.services.webhook_handler import WebhookHandler
+from src.pr_reviewer.adapters.github.signature_verifier import GitHubSignatureVerifier
+from src.pr_reviewer.adapters.queue.in_memory_queue import InMemoryReviewQueue
+from src.pr_reviewer.api.webhook_router import router as webhook_router
+from src.pr_reviewer.config import get_settings
+from src.pr_reviewer.domain.services.webhook_handler import WebhookHandler
 import threading
-from pr_reviewer.adapters.github.github_client import GitHubClient
-from pr_reviewer.adapters.llm.grok_reviewer import GroqReviewer
-from pr_reviewer.workers.review_worker import run_worker
+from src.pr_reviewer.adapters.github.github_client import GitHubClient
+from src.pr_reviewer.adapters.llm.grok_reviewer import GroqReviewer
+from src.pr_reviewer.workers.review_worker import run_worker
 import logging
 
 logging.basicConfig(

@@ -5,8 +5,8 @@ general-purpose review prompt.
 """
 from langchain_groq import ChatGroq
 
-from pr_reviewer.agents.base_agent import make_specialist_node
-from pr_reviewer.domain.contracts import AgentType
+from src.pr_reviewer.agents.base_agent import make_specialist_node
+from src.pr_reviewer.domain.contracts import AgentType
 
 SYSTEM_PROMPT = (
     "You are a security-focused senior engineer reviewing a pull request diff. "

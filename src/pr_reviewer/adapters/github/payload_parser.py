@@ -1,7 +1,7 @@
 """Turns GitHub's raw pull_request webhook JSON into our domain model."""
 from typing import Any
 
-from pr_reviewer.domain.models import PullRequestEvent
+from src.pr_reviewer.domain.models import PullRequestEvent
 
 
 def parse_pull_request_event(payload: dict[str, Any]) -> PullRequestEvent:

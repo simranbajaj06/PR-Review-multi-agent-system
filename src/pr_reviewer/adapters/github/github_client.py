@@ -1,8 +1,8 @@
 """Concrete VCSClient for GitHub - fetches the raw diff and posts comments back."""
 import os
 import requests
-from pr_reviewer.domain.interfaces import VCSClient
-from pr_reviewer.domain.models import PullRequestEvent
+from src.pr_reviewer.domain.interfaces import VCSClient
+from src.pr_reviewer.domain.models import PullRequestEvent
 
 
 class GitHubClient(VCSClient):
