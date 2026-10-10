@@ -9,6 +9,7 @@ from pgvector.psycopg import register_vector
 
 from src.pr_reviewer.rag.code_chunker import CodeChunk
 from src.pr_reviewer.rag.ports import ChunkKey, ChunkStore
+from psycopg_pool import ConnectionPool
 
 _UPSERT = """
 INSERT INTO code_chunks
@@ -32,6 +33,9 @@ SET start_line = %s, end_line = %s, commit_sha = %s, updated_at = now()
 WHERE repo = %s AND file_path = %s AND chunkname = %s
 """
 
+def _configure(conn: psycopg.Connection) -> None:
+    register_vector(conn)
+    conn.commit()
 
 def _normalize_dsn(dsn: str) -> str:
     """Accepts SQLAlchemy-style URLs (postgresql+psycopg2://...) as well as
@@ -40,15 +44,25 @@ def _normalize_dsn(dsn: str) -> str:
 
 
 class PgChunkStore(ChunkStore):
-    def __init__(self, dsn: str):
-        self._dsn = _normalize_dsn(dsn)
+    def __init__(self, dsn: str, min_size: int = 1, max_size: int = 5):
+        self._pool = ConnectionPool(
+            _normalize_dsn(dsn),
+            min_size=min_size,
+            max_size=max_size,
+            configure=_configure,
+            check=ConnectionPool.check_connection,  # drops dead connections
+            open=False,
+        )
+        self._pool.open(wait=True, timeout=15) 
 
-    def _connect(self) -> psycopg.Connection:
-        # One short-lived connection per operation: simple and thread-safe
-        # (the worker runs in its own thread). Swap for a pool if it matters.
-        conn = psycopg.connect(self._dsn)
-        register_vector(conn)
-        return conn
+    def _connect(self):
+        # Used exactly like before: `with self._connect() as conn:`
+        # On exit it commits and returns the connection to the pool
+        # (instead of closing it).
+        return self._pool.connection()
+
+    def close(self) -> None:
+        self._pool.close()
 
     def get_hashes(self, repo: str, file_paths: list[str] | None = None) -> dict[ChunkKey, str]:
         sql = "SELECT file_path, chunkname, content_hash FROM code_chunks WHERE repo = %s"

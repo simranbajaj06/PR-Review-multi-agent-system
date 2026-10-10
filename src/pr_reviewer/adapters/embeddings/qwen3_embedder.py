@@ -36,3 +36,14 @@ class Qwen3Embedder(Embedder):
             [text], prompt_name="query", normalize_embeddings=True, show_progress_bar=False
         )[0]
         return vector.tolist()
+
+    def embed_queries(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        vecs = self._model.encode(
+            texts,
+            prompt_name="query",          # same prompt your embed_query uses
+            batch_size=8,
+            normalize_embeddings=True,    # keep identical to embed_query
+        )
+        return vecs.tolist()

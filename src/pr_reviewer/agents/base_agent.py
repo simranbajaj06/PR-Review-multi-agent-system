@@ -47,9 +47,23 @@ def make_specialist_node(agent_type: AgentType, system_prompt: str, llm: ChatGro
 
     def node(state: ReviewState) -> dict:
         diff = state["diff"]
+        context = state.get("context", "")
+        # Reference code is kept clearly separate from the diff, and the model
+        # is told it's read-only background, so findings stay about the change.
+        context_note = (
+            "\n\nYou may also be given 'Reference code': existing code from the "
+            "repository's base branch, retrieved for context only. Use it to check "
+            "how the changed code is called or used and to follow existing "
+            "conventions. It is NOT part of this change: never report issues in "
+            "reference code, and only report findings about lines in the diff."
+        ) if context else ""
+        context_section = (
+            "\n\nReference code (existing code from the base branch, NOT part of "
+            "this change):\n\n" + context
+        ) if context else ""
         messages = [
             SystemMessage(
-                content=f"{system_prompt}\n\n"
+                content=f"{system_prompt}{context_note}\n\n"
                         f"Respond with a single JSON object matching this schema: "
                         f'{{"findings": [{{"agent_type": "{agent_type.value}", '
                         f'"severity": "critical|high|medium|low|info", "category": str, '
@@ -61,7 +75,7 @@ def make_specialist_node(agent_type: AgentType, system_prompt: str, llm: ChatGro
             HumanMessage(
                 content=f"PR #{state['pr_number']}: {state['pr_title']}\n\n"
                         f"Diff (language of the changed files may vary):\n\n"
-                        f"{diff}"
+                        f"{diff}{context_section}"
             ),
         ]
 

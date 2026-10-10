@@ -23,7 +23,19 @@ class PullRequestEvent:
 
 
 @dataclass(frozen=True)
-class Review:                                 
+class IndexJob:
+    """Bring the RAG index for `repo_full_name` up to commit `sha`.
+    Created from a push to the default branch."""
+    repo_full_name: str
+    sha: str
+
+
+# Anything that can travel through the queue.
+QueueJob = PullRequestEvent | IndexJob
+
+
+@dataclass(frozen=True)
+class Review:
     """The result of a reviewer pass over a PR's diff."""
     pr_number: int
     summary: str

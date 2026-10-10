@@ -4,7 +4,7 @@ Inversion piece of SOLID: the domain never imports a concrete adapter.
 """
 from abc import ABC, abstractmethod
 
-from src.pr_reviewer.domain.models import PullRequestEvent, Review
+from src.pr_reviewer.domain.models import PullRequestEvent, QueueJob, Review
 
 
 class WebhookVerifier(ABC):
@@ -16,15 +16,15 @@ class WebhookVerifier(ABC):
 
 
 class ReviewQueue(ABC):
-    """Where reviewable PR events go to be picked up for processing later."""
+    """Where work items (PR reviews, index jobs) go to be picked up later."""
 
     @abstractmethod
-    def enqueue(self, event: PullRequestEvent) -> None:
+    def enqueue(self, job: QueueJob) -> None:
         ...
 
     @abstractmethod
-    def dequeue(self) -> PullRequestEvent | None:
-        """Returns the next event, or None if the queue is currently empty."""
+    def dequeue(self) -> QueueJob | None:
+        """Returns the next job, or None if the queue is currently empty."""
         ...
 
 
@@ -36,12 +36,12 @@ class VCSClient(ABC):
         ...
 
     @abstractmethod
-    def post_comment(self, event: PullRequestEvent, body: str) -> None:      # ← new
+    def post_comment(self, event: PullRequestEvent, body: str) -> None:
         """Posts a general (non-inline) comment on the pull request."""
         ...
 
 
-class Reviewer(ABC):                                                          # ← new
+class Reviewer(ABC):
     """Produces a review for a PR given its diff."""
 
     @abstractmethod

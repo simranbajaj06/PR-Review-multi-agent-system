@@ -20,6 +20,7 @@ class ReviewState(TypedDict):
     pr_number: int
     pr_title: str
     diff: str
+    context: str
     findings: Annotated[list[Finding], _merge_findings]
     overall_confidence: float
     needs_human_review: bool

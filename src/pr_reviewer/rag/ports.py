@@ -89,3 +89,9 @@ class RepoSource(ABC):
     @abstractmethod
     def snapshot(self, repo: str, sha: str) -> AbstractContextManager[Snapshot]:
         """Full checkout in a temp dir, deleted on exit."""
+
+class Reranker(ABC):
+    @abstractmethod
+    def score(self, pairs: list[tuple[str, str]]) -> list[float]:
+        """Relevance score for each (query, document) pair. Higher = more relevant.
+        Returns one score per pair, in the same order."""
